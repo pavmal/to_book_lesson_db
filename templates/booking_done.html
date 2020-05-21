@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block header %}
+<title>TINYSTEPS - booking</title>
+{% endblock %}
+
+{% block content %}
+<main class="container mt-3">
+    <!-- HERO -->
+    <div class="row mt-5">
+        <div class="col-10 col-md-6 offset-1 offset-md-3">
+            <div class="card mb-3">
+                <div class="card-body text-center pt-5">
+                    <img src="/static/check.png" class="mb-3" width="65" alt="">
+                    <h2 class="h3 card-title mt-4 mb-2">Отправлено!</h2>
+                    <p>Скоро мы вам перезвоним</p>
+                </div>
+                <hr/>
+                <div class="card-body mx-5">
+                    <p><b>Тема:</b> Пробный урок</p>
+                    <p><b>Репетитор:</b> {{list_teachers[0]['name']}}</p>
+                    <p><b>Дата:</b> {{day}}, {{hour}}</p>
+                    <p><b>Имя:</b> {{client}}</p>
+                    <p><b>Телефон:</b> {{tel}}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+<p class="text-center"><a href="/" class="btn btn-success m-2">Вернуться на Главную страницу</a></p>
+{% endblock %}

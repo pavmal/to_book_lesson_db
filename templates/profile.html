@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block header %}
+<title>TINYSTEPS - teacher profile</title>
+{% endblock %}
+
+{% block content %}
+
+  <main class="container mt-3">
+    <div class="card my-4 mx-auto">
+      {% for teacher in list_teachers %}
+      <div class="card-body m-2 m-md-4">
+        <article class="row">
+          <div class="col-5"><img src="{{teacher['picture']}}" class="img-fluid" alt=""></div>
+          <div class="col-7">
+
+            <section class="teacher=info">
+
+              <h1 class="h2">{{teacher['name']}}</h1>
+              <p><span class="badge badge-secondary mr-2">{% for goal in list_goals.values() %}{{goal}}{% endfor %}</span>Рейтинг: {{teacher['rating']}} Ставка: {{teacher['price']}} / час</p>
+              <p>{{teacher['about']}}</p>
+
+            </section>
+
+            <section class="available">
+
+              <h4 class="mb-4 mt-5">Записаться на пробный урок</h4>
+              {% for days in schedule %}
+                {% for day, hours in days.items() %}
+              <h6 class="mt-4">{{day}}</h6>
+              {% if hours %}
+                {% for hour in hours %}
+                  {% if hour|length == 4 %}
+                    <a href="/booking/{{teacher['id']}}/{{day}}/{{hour}}/" class="btn btn-outline-success m-2"> {{hour}} свободно </a>
+                  {% else %}
+                    <a href="/booking/{{teacher['id']}}/{{day}}/{{hour}}/" class="btn btn-outline-success m-2">{{hour}} свободно</a>
+                  {% endif %}
+                {% endfor %}
+              {% else %}<p>Нет свободных уроков</p>{% endif %}
+
+                {% endfor %}
+              {% endfor %}
+            </section>
+
+          </div>
+        </article>
+      </div>
+      {% endfor %}
+    </div>
+  </main>
+{% endblock %}

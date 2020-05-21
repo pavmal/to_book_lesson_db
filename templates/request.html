@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block header %}
+<title>TINYSTEPS - request</title>
+{% endblock %}
+
+{% block content %}
+<main class="container mt-5">
+    <div class="col-12 col-sm-10 col-lg-6 offset-lg-3 offset-sm-1">
+        <form action="/request_done/" method="POST" class="card mb-5">
+            <div class="card-body text-center pt-5">
+                <h1 class="h3 card-title mt-4 mb-2">Подбор преподавателя</h1>
+                <p class="px-5">Напишите, чего вам нужно и&nbsp;мы&nbsp;подберем отличных&nbsp;ребят</p>
+            </div>
+            <hr>
+            <div class="card-body mx-3">
+                <div class="row">
+                    <div class="col">
+                        <p>{{ form.goal.label }}</p>
+                        <div class="form-check">
+                            {{ form.goal(required=True) }}
+                        </div>
+                    </div>
+                    <div class="col">
+                        <p>{{ form.time_hour.label }}</p>
+                        <div class="form-check">
+                            {{ form.time_hour(required=True) }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <hr>
+            <div class="card-body mx-3">
+                <label class="mb-1 mt-2" for="clientName">Вас зовут</label>
+                <input class="form-control" type="text" {{form.client(placeholder='Имя' , required=True,
+                       autofocus=True)}}
+
+                <label class="mb-1 mt-2" for="clientPhone">Ваш телефон</label>
+                <input class="form-control" type="tel" {{form.tel(required=True)}}
+                <p class="text-center"><input type="submit" class="btn btn-primary mt-4 mb-2"
+                                              value="Найдите мне преподавателя"></p>
+            </div>
+        </form>
+    </div>
+</main>
+<p class="text-center"><a href="/" class="btn btn-success m-2">Вернуться на Главную страницу</a></p>
+{% endblock %}
