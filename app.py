@@ -6,11 +6,10 @@ from wtforms.validators import Length, DataRequired, InputRequired
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from sqlalchemy.dialects.postgresql import JSON
-from sqlalchemy import Column, Integer, String, Float, Text, Boolean, Table, ForeignKey, MetaData
-from sqlalchemy.orm import relationship
+#from sqlalchemy import Column, Integer, String, Float, Text, Boolean, Table, ForeignKey
+#from sqlalchemy.orm import relationship
 
-NEED_IMPORT = True
-#metadata = MetaData()
+NEED_IMPORT = False
 
 from flask_debugtoolbar import DebugToolbarExtension
 
@@ -25,47 +24,47 @@ db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
 # ---------------------------------------------------------
-teachers_goals = Table('teachers_goals', db.metadata,
-                          Column('teacher_id', Integer, ForeignKey('teachers.teacher_id')),
-                          Column('goal_id', Integer, ForeignKey('goals.goal_id'))
+teachers_goals = db.Table('teachers_goals',
+                          db.Column('teacher_id', db.Integer, db.ForeignKey('teachers.teacher_id')),
+                          db.Column('goal_id', db.Integer, db.ForeignKey('goals.goal_id'))
                           )
-
-
-class Teacher(db.Model):
-    __tablename__ = 'teachers'
-    teacher_id = Column(Integer, primary_key=True)
-    teacher_name = Column(String(150), nullable=False)
-    rating = Column(Float, nullable=False)
-    price = Column(Float, nullable=False)
-    picture = Column(String(200))
-    goal = relationship('Goal', secondary=teachers_goals)
-    schedule = Column(JSON)
-    about = Column(Text)
 
 
 class Booking(db.Model):
     __tablename__ = 'bookings'
-    booking_id = Column(Integer, primary_key=True)
-    teacher_id = Column(Integer, ForeignKey('teachers.teacher_id'))
-    teacher = relationship('Teacher', back_populates='teacher_name')
-    week_day = Column(String(15))
-    lesson_time = Column(String(10))
-    client_name = Column(String(50))
-    client_phone = Column(String(20))
+    booking_id = db.Column(db.Integer, primary_key=True)
+    booking_ditails = db.Column(db.String(230))
+    teacher_name = db.relationship('Teacher', back_populates='teacher_booking')
+    week_day = db.Column(db.String(15))
+    lesson_time = db.Column(db.String(10))
+    client_name = db.Column(db.String(50))
+    client_phone = db.Column(db.String(20))
 
     # client_id = db.Column(db.Integer, db.ForeignKey('clients.client_id'))
     # client_name = db.relationship('Client', back_populates='client_name')
     # client_phone = db.relationship('Client', back_populates='client_phone')
 
+class Teacher(db.Model):
+    __tablename__ = 'teachers'
+    teacher_id = db.Column(db.Integer, primary_key=True)
+    teacher_name = db.Column(db.String(150), nullable=False)
+    rating = db.Column(db.Float, nullable=False)
+    price = db.Column(db.Float, nullable=False)
+    picture = db.Column(db.String(200))
+    goal = db.relationship('Goal', secondary=teachers_goals, back_populates='teacher')
+    schedule = db.Column(JSON)
+    about = db.Column(db.Text)
+    booking_id = db.Column(db.Integer, db.ForeignKey('bookings.booking_id'))
+    teacher_booking = db.relationship('Booking', back_populates='teacher_name')
+
 
 class RequestForm(db.Model):
     __tablename__ = 'reqforms'
-    reqform_id = Column(Integer, primary_key=True)
-    goal_id = Column(Integer, ForeignKey('goals.goal_id'))
-    goal_name = relationship('Goal', back_populates='goal_name')
-    learning_time = Column(String(25))  # TimeForLearn
-    client_name = Column(String(50))
-    client_phone = Column(String(20))
+    reqform_id = db.Column(db.Integer, primary_key=True)
+    goal_name = db.Column(db.String(35))
+    learning_time = db.Column(db.String(25))  # TimeForLearn
+    client_name = db.Column(db.String(50))
+    client_phone = db.Column(db.String(20))
 
     # client_id = db.Column(db.Integer, db.ForeignKey('clients.client_id'))
     # client_name = db.relationship('Client', back_populates='client_name')
@@ -74,10 +73,11 @@ class RequestForm(db.Model):
 
 class Goal(db.Model):
     __tablename__ = 'goals'
-    goal_id = Column(Integer, primary_key=True)
-    goal_cod = Column(String(15), unique=True, nullable=False)
-    goal_name = Column(String(35), unique=True, nullable=False)
-    teacher = relationship('Teacher', secondary=teachers_goals)
+    goal_id = db.Column(db.Integer, primary_key=True)
+    goal_cod = db.Column(db.String(15), unique=True, nullable=False)
+    goal_name = db.Column(db.String(35), unique=True, nullable=False)
+    teacher = db.relationship('Teacher', secondary=teachers_goals, back_populates='goal')
+
 
 
 class Client(db.Model):
@@ -90,25 +90,50 @@ class Client(db.Model):
 
 class TimeForLearn(db.Model):
     __tablename__ = 'timelearns'
-    time_id = Column(Integer, primary_key=True)
-    time_all = Column(JSON)
+    time_id = db.Column(db.Integer, primary_key=True)
+    time_all = db.Column(JSON)
 
 db.create_all()
-
-# times_table = Table('timelearns', metadata,
-#     Column('time_id', Integer, primary_key=True),
-#     Column('time_all', JSON))
-#
-# metadata.create_all(postgres)
-
-
 # ---------------------------------------------------------
 
-timers = {'1': '1-2 часа', '2': '3-5 часов', '3': '5-7 часов', '4': '7-10 часов'}
-with open('goals.txt', 'r') as f:
-    goals = json.load(f)
-with open('teachers.txt', 'r') as f:
-    teachers = json.load(f)
+#timers = {'1': '1-2 часа', '2': '3-5 часов', '3': '5-7 часов', '4': '7-10 часов'}
+timers_all = db.session.query(TimeForLearn).first()
+timers = timers_all.time_all
+print(timers)
+
+#with open('goals.txt', 'r') as f:
+#    goals = json.load(f)
+goals = {}
+goals_all = db.session.query(Goal).all()
+for elem in goals_all:
+    goals[elem.goal_cod] = elem.goal_name
+#print(goals)
+
+#with open('teachers.txt', 'r') as f:
+#    teachers = json.load(f)
+
+teachers = []
+teachers_all = db.session.query(Teacher).all()
+for elem in teachers_all:
+    tmp = {}
+    tmp['name'] = elem.teacher_name
+    tmp['rating']= elem.rating
+    tmp['price']= elem.price
+    tmp['picture']= elem.picture
+    tmp['about']= elem.about
+    tmp['free'] = elem.schedule
+    goal_all = db.session.query(Goal).filter(Goal.teacher.any(Teacher.teacher_id == elem.teacher_id)).all()
+    tmp_ls = []
+    for el in goal_all:
+        tmp_ls.append(el.goal_cod)
+
+    tmp['goals'] = tmp_ls
+    teachers.append(tmp)
+#print(teachers)
+
+
+t_all = db.session.query(Teacher).filter(Teacher.goal.any(Goal.goal_cod=='travel')).all() # все реетиторы с этой целью
+goal_all = db.session.query(Goal).filter(Goal.teacher.any(Teacher.teacher_id==1)).all() # все цели у одного репетитора
 
 
 class UserForm(FlaskForm):
@@ -264,36 +289,29 @@ def render_about():
 
 
 if __name__ == '__main__':
-
     if NEED_IMPORT:
-        #client = Client(client_name='Pavel', client_phone='112')
-        client = db.session.query(Client).first()
-        print(client.name)
-
         for k, v in goals.items():
             print(k, v, type(k), type(v))
-            #goal = Goal(goal_name=v, goal_cod=k)
-            #print(goal.goal_cod)
-            # db.session.add(goal)
+            goal = Goal(goal_name=v, goal_cod=k)
+            db.session.add(goal)
+        db.session.commit()
 
-        #timelearn = TimeForLearn(time_all = timers)
-        # db.session.add(timelearn)
+        timelearn = TimeForLearn(time_all = timers)
+        db.session.add(timelearn)
+        db.session.commit()
 
         for teach in teachers:
             pass
-            # teacher = Teacher(teacher_name=teach['name'], rating=teach['rating'], price=teach['price'],
-            #                   picture=teach['picture'], schedule=teach['free'], about=teach['about'],
-            #                   goal=teach['goals'])
-            # db.session.add(teacher)
+            teacher = Teacher(teacher_name=teach['name'], rating=teach['rating'], price=teach['price'],
+                              picture=teach['picture'], schedule=teach['free'], about=teach['about'])
+             #                 goal=teach['goals'])
+            db.session.add(teacher)
 
-            # print('{} {} {}'.format(teach['name'], teach['rating'], teach['price']))
-            # print('{}'.format(teach['picture']))
-            # print('{}'.format(teach['free']))
-            # print('{}'.format(teach['about']))
-            # print('{}'.format(teach['goals']))
+            for elem in teach['goals']:
+                goal_one = db.session.query(Goal).filter(Goal.goal_cod == elem).first()
+                teacher.goal.append(goal_one)
 
-
-        # db.session.commit()
+        db.session.commit()
 
 
     # app.run('127.0.0.1', 7788, debug=True)
