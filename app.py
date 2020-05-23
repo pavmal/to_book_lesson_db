@@ -3,19 +3,112 @@ from flask import Flask, render_template, request
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, RadioField
 from wtforms.validators import Length, DataRequired, InputRequired
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from sqlalchemy.dialects.postgresql import JSON
+from sqlalchemy import Column, Integer, String, Float, Text, Boolean, Table, ForeignKey, MetaData
+from sqlalchemy.orm import relationship
 
-# from flask_debugtoolbar import DebugToolbarExtension
-# import data
+NEED_IMPORT = True
+#metadata = MetaData()
 
-SECRET_KEY = os.urandom(32)
+from flask_debugtoolbar import DebugToolbarExtension
+
+SECRET_KEY = os.environ.get('SECRET_KEY')
+app = Flask(__name__)
+app.secret_key = SECRET_KEY
+app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres:pass@127.0.0.1:5432/postgres"
+
+#app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
+
+# ---------------------------------------------------------
+teachers_goals = Table('teachers_goals', db.metadata,
+                          Column('teacher_id', Integer, ForeignKey('teachers.teacher_id')),
+                          Column('goal_id', Integer, ForeignKey('goals.goal_id'))
+                          )
+
+
+class Teacher(db.Model):
+    __tablename__ = 'teachers'
+    teacher_id = Column(Integer, primary_key=True)
+    teacher_name = Column(String(150), nullable=False)
+    rating = Column(Float, nullable=False)
+    price = Column(Float, nullable=False)
+    picture = Column(String(200))
+    goal = relationship('Goal', secondary=teachers_goals)
+    schedule = Column(JSON)
+    about = Column(Text)
+
+
+class Booking(db.Model):
+    __tablename__ = 'bookings'
+    booking_id = Column(Integer, primary_key=True)
+    teacher_id = Column(Integer, ForeignKey('teachers.teacher_id'))
+    teacher = relationship('Teacher', back_populates='teacher_name')
+    week_day = Column(String(15))
+    lesson_time = Column(String(10))
+    client_name = Column(String(50))
+    client_phone = Column(String(20))
+
+    # client_id = db.Column(db.Integer, db.ForeignKey('clients.client_id'))
+    # client_name = db.relationship('Client', back_populates='client_name')
+    # client_phone = db.relationship('Client', back_populates='client_phone')
+
+
+class RequestForm(db.Model):
+    __tablename__ = 'reqforms'
+    reqform_id = Column(Integer, primary_key=True)
+    goal_id = Column(Integer, ForeignKey('goals.goal_id'))
+    goal_name = relationship('Goal', back_populates='goal_name')
+    learning_time = Column(String(25))  # TimeForLearn
+    client_name = Column(String(50))
+    client_phone = Column(String(20))
+
+    # client_id = db.Column(db.Integer, db.ForeignKey('clients.client_id'))
+    # client_name = db.relationship('Client', back_populates='client_name')
+    # client_phone = db.relationship('Client', back_populates='client_phone')
+
+
+class Goal(db.Model):
+    __tablename__ = 'goals'
+    goal_id = Column(Integer, primary_key=True)
+    goal_cod = Column(String(15), unique=True, nullable=False)
+    goal_name = Column(String(35), unique=True, nullable=False)
+    teacher = relationship('Teacher', secondary=teachers_goals)
+
+
+class Client(db.Model):
+    __tablename__ = 'clients'
+    client_id = db.Column(db.Integer, primary_key=True)
+    client_name = db.Column(db.String(200), nullable=False)
+    client_phone = db.Column(db.String(20), nullable=False)
+
+
+
+class TimeForLearn(db.Model):
+    __tablename__ = 'timelearns'
+    time_id = Column(Integer, primary_key=True)
+    time_all = Column(JSON)
+
+db.create_all()
+
+# times_table = Table('timelearns', metadata,
+#     Column('time_id', Integer, primary_key=True),
+#     Column('time_all', JSON))
+#
+# metadata.create_all(postgres)
+
+
+# ---------------------------------------------------------
+
 timers = {'1': '1-2 часа', '2': '3-5 часов', '3': '5-7 часов', '4': '7-10 часов'}
 with open('goals.txt', 'r') as f:
     goals = json.load(f)
 with open('teachers.txt', 'r') as f:
     teachers = json.load(f)
-
-app = Flask(__name__)
-app.secret_key = SECRET_KEY
 
 
 class UserForm(FlaskForm):
@@ -171,17 +264,38 @@ def render_about():
 
 
 if __name__ == '__main__':
-    # with open('goals.txt', 'w') as f:
-    #     json.dump(data.goals, f)
-    # with open('teachers.txt', 'w') as f:
-    #     json.dump(data.teachers, f)
 
-    # with open('goals.txt', 'r') as f:
-    #     goals = json.load(f)
-    # with open('teachers.txt', 'r') as f:
-    #     teachers = json.load(f)
+    if NEED_IMPORT:
+        #client = Client(client_name='Pavel', client_phone='112')
+        client = db.session.query(Client).first()
+        print(client.name)
+
+        for k, v in goals.items():
+            print(k, v, type(k), type(v))
+            #goal = Goal(goal_name=v, goal_cod=k)
+            #print(goal.goal_cod)
+            # db.session.add(goal)
+
+        #timelearn = TimeForLearn(time_all = timers)
+        # db.session.add(timelearn)
+
+        for teach in teachers:
+            pass
+            # teacher = Teacher(teacher_name=teach['name'], rating=teach['rating'], price=teach['price'],
+            #                   picture=teach['picture'], schedule=teach['free'], about=teach['about'],
+            #                   goal=teach['goals'])
+            # db.session.add(teacher)
+
+            # print('{} {} {}'.format(teach['name'], teach['rating'], teach['price']))
+            # print('{}'.format(teach['picture']))
+            # print('{}'.format(teach['free']))
+            # print('{}'.format(teach['about']))
+            # print('{}'.format(teach['goals']))
+
+
+        # db.session.commit()
+
 
     # app.run('127.0.0.1', 7788, debug=True)
     app.run()  # for gunicorn server
-
-#    toolbar = DebugToolbarExtension(app)
+toolbar = DebugToolbarExtension(app)
