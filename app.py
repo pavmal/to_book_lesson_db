@@ -10,7 +10,7 @@ from sqlalchemy.dialects.postgresql import JSON
 
 from flask_debugtoolbar import DebugToolbarExtension
 
-NEED_IMPORT = True
+NEED_IMPORT = False
 SECRET_KEY = os.environ.get('SECRET_KEY')
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
