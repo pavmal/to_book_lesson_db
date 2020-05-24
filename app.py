@@ -14,7 +14,9 @@ NEED_IMPORT = False
 SECRET_KEY = os.environ.get('SECRET_KEY')
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
+# app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
+app.config[
+    "SQLALCHEMY_DATABASE_URI"] = 'postgres://jsjunurtifagws:7339473a76cce119b0d14e23124531218217f74ce74ce5a9fefb79259a853b60@ec2-54-75-231-215.eu-west-1.compute.amazonaws.com:5432/d5q2ef4qru3cpr'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
@@ -111,6 +113,16 @@ class UserForm(FlaskForm):
                            choices=[('1', '1-2 часа'), ('2', '3-5 часов'), ('3', '5-7 часов'), ('4', '7-10 часов')],
                            default='2', validators=[DataRequired()])
     submit = SubmitField('Запись данных')
+
+
+
+timers_all = db.session.query(TimeForLearn).first()
+timers = timers_all.time_all
+
+goals = {}
+goals_all = db.session.query(Goal).all()
+for elem in goals_all:
+    goals[elem.goal_cod] = elem.goal_name
 
 
 def teacher_info(uid):
@@ -295,14 +307,6 @@ if __name__ == '__main__':
 
         db.session.commit()
 
-    timers_all = db.session.query(TimeForLearn).first()
-    timers = timers_all.time_all
-
-    goals = {}
-    goals_all = db.session.query(Goal).all()
-    for elem in goals_all:
-        goals[elem.goal_cod] = elem.goal_name
-
     # app.run('127.0.0.1', 7788, debug=True)
     app.run()  # for gunicorn server
-#toolbar = DebugToolbarExtension(app)
+# toolbar = DebugToolbarExtension(app)
