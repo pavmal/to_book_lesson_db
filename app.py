@@ -6,8 +6,9 @@ from wtforms.validators import Length, DataRequired, InputRequired
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from sqlalchemy.dialects.postgresql import JSON
-#from sqlalchemy import Column, Integer, String, Float, Text, Boolean, Table, ForeignKey
-#from sqlalchemy.orm import relationship
+
+# from sqlalchemy import Column, Integer, String, Float, Text, Boolean, Table, ForeignKey
+# from sqlalchemy.orm import relationship
 
 NEED_IMPORT = False
 
@@ -18,7 +19,7 @@ app = Flask(__name__)
 app.secret_key = SECRET_KEY
 app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres:pass@127.0.0.1:5432/postgres"
 
-#app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
+# app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
@@ -43,6 +44,7 @@ class Booking(db.Model):
     # client_id = db.Column(db.Integer, db.ForeignKey('clients.client_id'))
     # client_name = db.relationship('Client', back_populates='client_name')
     # client_phone = db.relationship('Client', back_populates='client_phone')
+
 
 class Teacher(db.Model):
     __tablename__ = 'teachers'
@@ -79,7 +81,6 @@ class Goal(db.Model):
     teacher = db.relationship('Teacher', secondary=teachers_goals, back_populates='goal')
 
 
-
 class Client(db.Model):
     __tablename__ = 'clients'
     client_id = db.Column(db.Integer, primary_key=True)
@@ -87,53 +88,37 @@ class Client(db.Model):
     client_phone = db.Column(db.String(20), nullable=False)
 
 
-
 class TimeForLearn(db.Model):
     __tablename__ = 'timelearns'
     time_id = db.Column(db.Integer, primary_key=True)
     time_all = db.Column(JSON)
 
+
 db.create_all()
 # ---------------------------------------------------------
 
-#timers = {'1': '1-2 часа', '2': '3-5 часов', '3': '5-7 часов', '4': '7-10 часов'}
+# timers = {'1': '1-2 часа', '2': '3-5 часов', '3': '5-7 часов', '4': '7-10 часов'}
 timers_all = db.session.query(TimeForLearn).first()
 timers = timers_all.time_all
 print(timers)
 
-#with open('goals.txt', 'r') as f:
+# with open('goals.txt', 'r') as f:
 #    goals = json.load(f)
 goals = {}
 goals_all = db.session.query(Goal).all()
 for elem in goals_all:
     goals[elem.goal_cod] = elem.goal_name
-#print(goals)
+# print(goals)
 
-#with open('teachers.txt', 'r') as f:
+# with open('teachers.txt', 'r') as f:
 #    teachers = json.load(f)
 
-teachers = []
-teachers_all = db.session.query(Teacher).all()
-for elem in teachers_all:
-    tmp = {}
-    tmp['name'] = elem.teacher_name
-    tmp['rating']= elem.rating
-    tmp['price']= elem.price
-    tmp['picture']= elem.picture
-    tmp['about']= elem.about
-    tmp['free'] = elem.schedule
-    goal_all = db.session.query(Goal).filter(Goal.teacher.any(Teacher.teacher_id == elem.teacher_id)).all()
-    tmp_ls = []
-    for el in goal_all:
-        tmp_ls.append(el.goal_cod)
-
-    tmp['goals'] = tmp_ls
-    teachers.append(tmp)
-#print(teachers)
 
 
-t_all = db.session.query(Teacher).filter(Teacher.goal.any(Goal.goal_cod=='travel')).all() # все реетиторы с этой целью
-goal_all = db.session.query(Goal).filter(Goal.teacher.any(Teacher.teacher_id==1)).all() # все цели у одного репетитора
+t_all = db.session.query(Teacher).filter(
+    Teacher.goal.any(Goal.goal_cod == 'travel')).all()  # все реетиторы с этой целью
+goal_all = db.session.query(Goal).filter(
+    Goal.teacher.any(Teacher.teacher_id == 1)).all()  # все цели у одного репетитора
 
 
 class UserForm(FlaskForm):
@@ -154,6 +139,32 @@ class UserForm(FlaskForm):
                            default='2', validators=[DataRequired()])
     submit = SubmitField('Запись данных')
 
+def teacher_info(uid):
+    rec = db.session.query(Teacher).get(uid)
+    goal_all = db.session.query(Goal).filter(Goal.teacher.any(Teacher.teacher_id == uid)).all()
+    tmp_list = [elem.goal_cod for elem in goal_all]
+    teacher_info = []
+    tmp_dict = {'id': rec.teacher_id, 'name': rec.teacher_name, 'rating': rec.rating, 'price': rec.price,
+                'picture': rec.picture, 'about': rec.about, 'free': rec.schedule, 'goals': tmp_list}
+    teacher_info.append(tmp_dict)
+    return teacher_info
+
+def all_teachers_info():
+    teachers = []
+    teachers_all = db.session.query(Teacher).all()
+    for elem in teachers_all:
+        tmp = {}
+        tmp['id'] = elem.teacher_id
+        tmp['name'] = elem.teacher_name
+        tmp['rating'] = elem.rating
+        tmp['price'] = elem.price
+        tmp['picture'] = elem.picture
+        tmp['about'] = elem.about
+        tmp['free'] = elem.schedule
+        goal_all = db.session.query(Goal).filter(Goal.teacher.any(Teacher.teacher_id == elem.teacher_id)).all()
+        tmp['goals'] = [elem.goal_cod for elem in goal_all]
+        teachers.append(tmp)
+    return teachers
 
 @app.route('/')
 def render_main():
@@ -161,6 +172,7 @@ def render_main():
     Представление главной страницы
     :return: 'Здесь будет Главная страница'
     """
+    teachers = all_teachers_info()
     list_teachers = random.sample(teachers, k=6)
     return render_template('index.html', list_goals=goals, list_teachers=list_teachers)
 
@@ -172,7 +184,18 @@ def render_goals(goal_id):
     :return: 'Здесь будет список репетиторов с учетом направлений'
     """
     one_goal = {key: val for key, val in goals.items() if key == goal_id}
-    short_list_teachers = [teacher for teacher in teachers if goal_id in teacher['goals']]
+#    short_list_teachers = [teacher for teacher in teachers if goal_id in teacher['goals']]
+    short_list_teachers = []
+    teach_records = db.session.query(Teacher).filter(Teacher.goal.any(Goal.goal_cod == goal_id)).all()
+    for rec in teach_records:
+        # short_list_teachers.append(teacher_info(rec.teacher_id))
+        goal_all = db.session.query(Goal).filter(Goal.teacher.any(Teacher.teacher_id == rec.teacher_id)).all()
+        tmp_list = [elem.goal_cod for elem in goal_all]
+
+        tmp_dict = {'id': rec.teacher_id, 'name': rec.teacher_name, 'rating': rec.rating, 'price': rec.price,
+                    'picture': rec.picture, 'about': rec.about, 'free': rec.schedule, 'goals': tmp_list}
+        short_list_teachers.append(tmp_dict)
+    print(len(short_list_teachers))
     return render_template('goal.html', list_goals=one_goal, list_teachers=short_list_teachers)
 
 
@@ -182,8 +205,21 @@ def render_teachers(teacher_id):
     Представление страницы с профилем репетитора
     :return: 'Здесь будет профиль репетитора'
     """
-    one_teacher = [teacher for teacher in teachers if teacher['id'] == teacher_id]
+#    one_teacher = [teacher for teacher in teachers if teacher['id'] == teacher_id]
+#    print(one_teacher)
+    rec = db.session.query(Teacher).get_or_404(teacher_id)
+    goal_all = db.session.query(Goal).filter(Goal.teacher.any(Teacher.teacher_id == teacher_id)).all()
+    tmp_list = [elem.goal_cod for elem in goal_all]
+    one_teacher = teacher_info(teacher_id)
+    # one_teacher = []
+    # tmp_dict = {'id': rec.teacher_id, 'name': rec.teacher_name, 'rating': rec.rating, 'price': rec.price,
+    #             'picture': rec.picture, 'about': rec.about, 'free': rec.schedule, 'goals': tmp_list}
+    # one_teacher.append(tmp_dict)
+
     short_list_goals = {key: goal for key, goal in goals.items() if key in one_teacher[0]['goals']}
+    #short_list_goals = {key: goal for key, goal in goals.items() if key in tmp_list}
+    print(one_teacher)
+
     list_free = []
     Mon = [hour for hour, val in one_teacher[0]['free']['mon'].items() if val == True]
     list_free.append({'Понедельник': Mon})
@@ -202,45 +238,53 @@ def render_teachers(teacher_id):
     return render_template('profile.html', list_goals=short_list_goals, list_teachers=one_teacher, schedule=list_free)
 
 
-@app.route('/booking/<int:teacher_id>/<day>/<hour>/')
+@app.route('/booking__/<int:teacher_id>/<day>/<hour>/')
 def render_booking(teacher_id, day, hour):
     """
     Представление страницы с оформлением бронирования урока репетитора
     :return: 'Здесь будет форма бронирования урока репетитора'
     """
     form = UserForm()
-    one_teacher = [teacher for teacher in teachers if teacher['id'] == teacher_id]
+#    one_teacher = [teacher for teacher in teachers if teacher['id'] == teacher_id]
+    one_teacher = teacher_info(teacher_id)
     return render_template('booking.html', list_teachers=one_teacher, day=day, hour=hour, form=form)
 
 
-@app.route('/booking_done/<int:teacher_id>/<day>/<hour>/', methods=['POST'])
+@app.route('/booking/<int:teacher_id>/<day>/<hour>/', methods=['GET','POST'])
 def render_booking_done(teacher_id, day, hour):
     """
-    Представление страницы с подтверждением принятия брони
-    :return: 'Здесь будет подтверждение брони'
+    Представление страницы с оформлением бронирования урока репетитора и подтверждением принятия брони
+    :return: 'Здесь будет приема и подтверждение брони'
     """
     form = UserForm()
+    one_teacher = teacher_info(teacher_id)
     if request.method == "POST":
         fio = form.client.data
         phone = form.tel.data
-        one_teacher = [teacher for teacher in teachers if teacher['id'] == teacher_id]
-        result = {'teacher': teacher_id, 'dayofweek': day, 'hour': hour, 'client': fio, 'phone': phone}
-        tmp_file = []
-        if os.path.exists('booking.json'):
-            with open('booking.json', 'r') as f:
-                tmp_file = json.load(f)
-        tmp_file.append(result)
-        with open('booking.json', 'w') as f:
-            json.dump(tmp_file, f)
+        #one_teacher = [teacher for teacher in teachers if teacher['id'] == teacher_id]
+
+        teach = db.session.query(Teacher).get(teacher_id)
+        one_booking = Booking(week_day=day, lesson_time=hour, client_name=fio, client_phone=phone,
+                              booking_ditails=day + ' ' + hour + ' ' + fio + ' '+ phone)
+        db.session.add(one_booking)
+        one_booking.teacher_name.append(teach)
+        db.session.commit()
+        # result = {'teacher': teacher_id, 'dayofweek': day, 'hour': hour, 'client': fio, 'phone': phone}
+        # tmp_file = []
+        # if os.path.exists('booking.json'):
+        #     with open('booking.json', 'r') as f:
+        #         tmp_file = json.load(f)
+        # tmp_file.append(result)
+        # with open('booking.json', 'w') as f:
+        #     json.dump(tmp_file, f)
 
         return render_template('booking_done.html', list_teachers=one_teacher, day=day, hour=hour, client=fio,
-                               tel=phone,
-                               form=form)
+                               tel=phone, form=form)
     else:
-        return render_template('booking.html')
+        return render_template('booking.html', list_teachers=one_teacher, day=day, hour=hour, form=form)
 
 
-@app.route('/request/')
+@app.route('/request___/')
 def render_request():
     """
     Представление страницы для оформления заявки на репетитора
@@ -250,12 +294,13 @@ def render_request():
     return render_template('request.html', list_goals=goals, form=form)
 
 
-@app.route('/request_done/', methods=['POST'])
+@app.route('/request/', methods=['GET','POST'])
 def render_request_done():
     """
     Представление страницы с подтверждением принятия заявки на подбор репетитора
     :return: 'Здесь будет подтверждение принятия заявки на подбор репетитора'
     """
+    teachers = all_teachers_info()
     form = UserForm()
     if request.method == "POST":
         fio = form.client.data
@@ -264,19 +309,23 @@ def render_request_done():
         cl_goal = goals.get(goal)[2:]
         timer = form.time_hour.data
         cl_timer = timers.get(timer)
-        result = {'goal': goals.get(goal), 'time': cl_timer, 'client': fio, 'phone': phone}
-        tmp_file = []
-        if os.path.exists('request.json'):
-            with open('request.json', 'r') as f:
-                tmp_file = json.load(f)
-        tmp_file.append(result)
-        with open('request.json', 'w') as f:
-            json.dump(tmp_file, f)
+        one_req = RequestForm(goal_name=cl_goal, learning_time=cl_timer, client_name=fio, client_phone=phone)
+        db.session.add(one_req)
+        db.session.commit()
+
+        # result = {'goal': goals.get(goal), 'time': cl_timer, 'client': fio, 'phone': phone}
+        # tmp_file = []
+        # if os.path.exists('request.json'):
+        #     with open('request.json', 'r') as f:
+        #         tmp_file = json.load(f)
+        # tmp_file.append(result)
+        # with open('request.json', 'w') as f:
+        #     json.dump(tmp_file, f)
 
         return render_template('request_done.html', list_teachers=teachers, client=fio, tel=phone, goal=cl_goal,
                                timer=cl_timer, form=form)
     else:
-        return render_template('request.html')
+        return render_template('request.html', list_goals=goals, form=form)
 
 
 @app.route('/about/')
@@ -296,7 +345,7 @@ if __name__ == '__main__':
             db.session.add(goal)
         db.session.commit()
 
-        timelearn = TimeForLearn(time_all = timers)
+        timelearn = TimeForLearn(time_all=timers)
         db.session.add(timelearn)
         db.session.commit()
 
@@ -304,7 +353,7 @@ if __name__ == '__main__':
             pass
             teacher = Teacher(teacher_name=teach['name'], rating=teach['rating'], price=teach['price'],
                               picture=teach['picture'], schedule=teach['free'], about=teach['about'])
-             #                 goal=teach['goals'])
+            #                 goal=teach['goals'])
             db.session.add(teacher)
 
             for elem in teach['goals']:
@@ -312,7 +361,6 @@ if __name__ == '__main__':
                 teacher.goal.append(goal_one)
 
         db.session.commit()
-
 
     # app.run('127.0.0.1', 7788, debug=True)
     app.run()  # for gunicorn server
