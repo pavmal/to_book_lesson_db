@@ -305,4 +305,4 @@ if __name__ == '__main__':
 
     # app.run('127.0.0.1', 7788, debug=True)
     app.run()  # for gunicorn server
-toolbar = DebugToolbarExtension(app)
+#toolbar = DebugToolbarExtension(app)
