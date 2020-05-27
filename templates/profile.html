@@ -30,11 +30,8 @@
               <h6 class="mt-4">{{day}}</h6>
               {% if hours %}
                 {% for hour in hours %}
-                  {% if hour|length == 4 %}
-                    <a href="/booking/{{teacher['id']}}/{{day}}/{{hour}}/" class="btn btn-outline-success m-2"> {{hour}} свободно </a>
-                  {% else %}
-                    <a href="/booking/{{teacher['id']}}/{{day}}/{{hour}}/" class="btn btn-outline-success m-2">{{hour}} свободно</a>
-                  {% endif %}
+                    <!--a href="/booking/{{teacher['id']}}/{{day}}/{{hour}}/" class="btn btn-outline-success m-2"> {{hour}} свободно </a-->
+                    <a href="{{url_for('render_booking', teacher_id=teacher['id'], day=day, hour=hour)}}" class="btn btn-outline-success m-2"> {{hour}} свободно </a>
                 {% endfor %}
               {% else %}<p>Нет свободных уроков</p>{% endif %}
 

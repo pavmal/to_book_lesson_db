@@ -1,6 +1,6 @@
 import os, json, random
 
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, url_for
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, RadioField
 from wtforms.validators import Length, DataRequired, InputRequired
@@ -102,8 +102,8 @@ class UserForm(FlaskForm):
     time_hour: поле для отражения времени занятия
     submit: кнопка отправки текста на обработку
     """
-    client = StringField('Имя пользователя', validators=[Length(min=0, max=100), InputRequired()])
-    tel = StringField('Телефон пользователя', validators=[Length(min=0, max=15), InputRequired()])
+    client = StringField('Ваше имя', validators=[Length(min=0, max=100), InputRequired()])
+    tel = StringField('Телефон для связи', validators=[Length(min=0, max=15), InputRequired()])
     goal = RadioField('Какая цель занятий?',
                       choices=[('travel', 'Для путешествий'), ('study', 'Для учебы'), ('work', 'Для работы'),
                                ('relocate', 'Для переезда')], default='travel', validators=[DataRequired()])
@@ -220,7 +220,7 @@ def render_teachers(teacher_id):
 
 
 @app.route('/booking/<int:teacher_id>/<day>/<hour>/', methods=['GET', 'POST'])
-def render_booking_done(teacher_id, day, hour):
+def render_booking(teacher_id, day, hour):
     """
     Представление страницы с оформлением бронирования урока репетитора и подтверждением принятия брони
     :return: 'Здесь будет приема и подтверждение брони'
@@ -244,7 +244,7 @@ def render_booking_done(teacher_id, day, hour):
 
 
 @app.route('/request/', methods=['GET', 'POST'])
-def render_request_done():
+def render_request():
     """
     Представление страницы с подтверждением принятия заявки на подбор репетитора
     :return: 'Здесь будет подтверждение принятия заявки на подбор репетитора'
